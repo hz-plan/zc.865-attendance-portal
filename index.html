@@ -6,7 +6,6 @@
   <title>單位早會出勤管理系統</title>
   <!-- CDN Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root {
       --primary: #1f3864;
@@ -19,6 +18,7 @@
       --leave-color: #c65911;
       --exempt-bg: #e7e6e6;
       --exempt-color: #595959;
+      --holiday-bg: #f1f5f9;
       --border: #d9d9d9;
       --bg: #f1f4f9;
       --card: #ffffff;
@@ -50,6 +50,9 @@
       font-size: 18px;
       font-weight: bold;
       color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .status-legend {
       display: flex;
@@ -138,7 +141,7 @@
     .summary-card .lbl { font-size: 11px; color: #64748b; font-weight: bold; }
     .summary-card .val { font-size: 16px; font-weight: bold; color: var(--primary); margin-top: 2px; }
 
-        .table-container {
+    .table-container {
       background: var(--card);
       border-radius: 8px;
       overflow: auto;
@@ -146,15 +149,15 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.06);
       border: 1px solid var(--border);
       position: relative;
-      padding-bottom: 22px; /* Prevent horizontal scrollbar from blocking the last row */
+      padding-bottom: 22px;
     }
     table {
       width: 100%;
-      border-collapse: separate; /* Fixes sticky border bleed-through */
+      border-collapse: separate;
       border-spacing: 0;
       font-size: 12px;
       white-space: nowrap;
-      margin-bottom: 8px; /* Extra bottom breathing room */
+      margin-bottom: 8px;
     }
     th, td {
       border-right: 1px solid #e2e8f0;
@@ -172,6 +175,7 @@
       font-weight: 600;
       border-top: 1px solid #e2e8f0;
     }
+
     /* Fixed Left Columns */
     th.fixed-col-group, td.fixed-col-group {
       position: sticky;
@@ -201,7 +205,7 @@
       color: #ffffff;
     }
 
-    /* Fixed Right Columns (Seamless Exact Widths: 85px + 85px + 95px = 265px) */
+    /* Fixed Right Columns (Monthly Mode) */
     th.fixed-m1, td.fixed-m1 {
       position: sticky;
       right: 180px;
@@ -235,57 +239,88 @@
       max-width: 95px;
       font-weight: 800;
       font-size: 13px;
-      color: #0f172a; /* Ultra clear high-contrast color */
+      color: #0f172a;
     }
-    td.fixed-m3.rate-low {
+    td.fixed-m3.rate-low, td.annual-cell.rate-low {
       background-color: #ffe2e2 !important;
       color: #b91c1c !important;
       font-weight: 800;
     }
 
-    th.fixed-m1, th.fixed-m2, th.fixed-m3 {
+    th.fixed-m1, th.fixed-m2, th.fixed-m3,
+    th.fixed-a1, th.fixed-a2, th.fixed-a3 {
       z-index: 16;
       background-color: #152644;
       color: #ffffff;
       font-weight: 700;
     }
 
-    /* Solid Opaque Row Colors so text never leaks during horizontal scrolling */
-    tr td {
+    /* Fixed Right Columns (Annual Mode) */
+    th.fixed-a1, td.fixed-a1 {
+      position: sticky;
+      right: 200px;
+      z-index: 6;
       background-color: #ffffff;
+      width: 95px;
+      min-width: 95px;
+      max-width: 95px;
+      border-left: 2px solid #cbd5e1;
+      font-weight: 700;
+      color: #1e293b;
     }
-    tr:nth-child(even) td {
-      background-color: #f8fafc;
+    th.fixed-a2, td.fixed-a2 {
+      position: sticky;
+      right: 105px;
+      z-index: 6;
+      background-color: #ffffff;
+      width: 95px;
+      min-width: 95px;
+      max-width: 95px;
+      font-weight: 700;
+      color: #1e293b;
     }
+    th.fixed-a3, td.fixed-a3 {
+      position: sticky;
+      right: 0px;
+      z-index: 6;
+      background-color: #ffffff;
+      width: 105px;
+      min-width: 105px;
+      max-width: 105px;
+      font-weight: 800;
+      font-size: 13px;
+      color: #0f172a;
+    }
+
+    /* Solid Opaque Row Colors */
+    tr td { background-color: #ffffff; }
+    tr:nth-child(even) td { background-color: #f8fafc; }
     tr:nth-child(even) td.fixed-col-group,
     tr:nth-child(even) td.fixed-col-name,
     tr:nth-child(even) td.fixed-m1,
     tr:nth-child(even) td.fixed-m2,
-    tr:nth-child(even) td.fixed-m3 {
+    tr:nth-child(even) td.fixed-m3,
+    tr:nth-child(even) td.fixed-a1,
+    tr:nth-child(even) td.fixed-a2,
+    tr:nth-child(even) td.fixed-a3 {
       background-color: #f8fafc;
     }
-    tr:hover td {
-      background-color: #f1f5f9;
-    }
+    tr:hover td { background-color: #f1f5f9; }
     tr:hover td.fixed-col-group,
     tr:hover td.fixed-col-name,
     tr:hover td.fixed-m1,
     tr:hover td.fixed-m2,
-    tr:hover td.fixed-m3 {
+    tr:hover td.fixed-m3,
+    tr:hover td.fixed-a1,
+    tr:hover td.fixed-a2,
+    tr:hover td.fixed-a3 {
       background-color: #f1f5f9;
     }
 
     /* Drag & Drop Row Visuals */
-    tr.dragging {
-      opacity: 0.4;
-      background-color: #cbd5e1 !important;
-    }
-    tr.drag-over-top td {
-      border-top: 3px solid #2563eb !important;
-    }
-    tr.drag-over-bottom td {
-      border-bottom: 3px solid #2563eb !important;
-    }
+    tr.dragging { opacity: 0.4; background-color: #cbd5e1 !important; }
+    tr.drag-over-top td { border-top: 3px solid #2563eb !important; }
+    tr.drag-over-bottom td { border-bottom: 3px solid #2563eb !important; }
 
     td.att-cell {
       cursor: pointer;
@@ -305,6 +340,34 @@
     td.st-offi { background: var(--official-bg) !important; color: var(--official-color); }
     td.st-leav { background: var(--leave-bg) !important; color: var(--leave-color); }
     td.st-exem { background: var(--exempt-bg) !important; color: var(--exempt-color); font-size: 11px; }
+
+    /* Holiday Column Styles */
+    th.holiday-header {
+      background-color: #c2410c !important;
+      color: #ffffff !important;
+    }
+    td.holiday-cell {
+      background-color: #f1f5f9 !important;
+      color: #94a3b8 !important;
+      font-size: 11px;
+      cursor: not-allowed !important;
+      user-select: none;
+    }
+    .th-toggle-btn {
+      display: block;
+      font-size: 9px;
+      padding: 1px 3px;
+      margin-top: 3px;
+      background: rgba(255, 255, 255, 0.25);
+      color: #fff;
+      border-radius: 2px;
+      cursor: pointer;
+      border: none;
+      font-weight: normal;
+    }
+    .th-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.45);
+    }
 
     .btn-quick-exempt {
       font-size: 10px;
@@ -366,6 +429,13 @@
     .tool-btn:hover { background: #e2e8f0; }
     .tool-del { color: #dc2626; border-color: #fca5a5; }
     .tool-del:hover { background: #fee2e2; }
+
+    /* Annual Matrix Cells */
+    td.annual-cell {
+      min-width: 58px;
+      font-size: 12px;
+      font-weight: 700;
+    }
 
     /* Modals */
     .modal-overlay {
@@ -440,7 +510,7 @@
         margin: 0 !important;
       }
       thead {
-        display: table-header-group !important; /* Repeats table header across printed pages */
+        display: table-header-group !important;
       }
       th, td {
         position: static !important;
@@ -455,11 +525,18 @@
         color: #ffffff !important;
         font-weight: 700 !important;
       }
+      th.holiday-header {
+        background-color: #c2410c !important;
+        color: #ffffff !important;
+      }
       th.fixed-col-group, td.fixed-col-group,
       th.fixed-col-name, td.fixed-col-name,
       th.fixed-m1, td.fixed-m1,
       th.fixed-m2, td.fixed-m2,
-      th.fixed-m3, td.fixed-m3 {
+      th.fixed-m3, td.fixed-m3,
+      th.fixed-a1, td.fixed-a1,
+      th.fixed-a2, td.fixed-a2,
+      th.fixed-a3, td.fixed-a3 {
         position: static !important;
         width: auto !important;
         max-width: none !important;
@@ -469,14 +546,14 @@
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
-      .btn-quick-exempt, .mgt-tools, .del-btn, .drag-handle {
+      .btn-quick-exempt, .mgt-tools, .del-btn, .drag-handle, .th-toggle-btn {
         display: none !important;
       }
-      /* Ensure color highlights print accurately */
       td.st-pres { background-color: #e2efda !important; color: #276a3c !important; font-weight: bold; }
       td.st-offi { background-color: #deebf7 !important; color: #1f4e78 !important; font-weight: bold; }
       td.st-leav { background-color: #fce4d6 !important; color: #c65911 !important; }
       td.st-exem { background-color: #e7e6e6 !important; color: #595959 !important; }
+      td.holiday-cell { background-color: #f1f5f9 !important; color: #94a3b8 !important; }
       td.rate-low { background-color: #ffe2e2 !important; color: #b91c1c !important; font-weight: 800 !important; }
     }
   </style>
@@ -487,7 +564,7 @@
     <div class="top-bar">
       <div class="sys-title">📋 單位早會出勤管理系統</div>
 
-      <div class="status-legend">
+      <div class="status-legend" id="statusLegendBar">
         <span>快捷鍵：</span>
         <span class="badge b-pres">1 : ✓ 出席</span>
         <span class="badge b-offi">2 : 公 外訓</span>
@@ -499,12 +576,20 @@
     
     <div class="controls">
       <div class="ctrl-item">
+        <label>檢視模式：</label>
+        <select id="viewModeSelect" onchange="switchViewMode()" style="background:#eff6ff; font-weight:bold; color:#1d4ed8;">
+          <option value="month">📅 當月出勤明細</option>
+          <option value="annual">📊 全年度出席率總表 (1~12月)</option>
+        </select>
+      </div>
+
+      <div class="ctrl-item">
         <label>年度：</label>
         <select id="yearSelect" onchange="switchYear()"></select>
       </div>
 
-      <div class="ctrl-item">
-        <label>月份：</label>
+      <div class="ctrl-item" id="monthSelectContainer">
+        <label>工作月：</label>
         <select id="monthSelect" onchange="switchMonth()"></select>
       </div>
 
@@ -518,14 +603,14 @@
         <input type="text" id="searchInput" placeholder="搜尋同仁..." oninput="renderTable()" style="width: 110px;">
       </div>
 
-      <div class="ctrl-item" style="margin-left: 6px;">
+      <div class="ctrl-item" id="manageBtnContainer" style="margin-left: 6px;">
         <button class="btn-success" title="新增一位同仁至指定組別名冊" onclick="openAddModal()">➕ 新增同仁</button>
         <button class="btn-outline" id="manageToggleBtn" title="開啟名冊排序 (拖曳/箭頭)、修改姓名與刪除模式" onclick="toggleManageMode()">⚙️ 維護名冊</button>
       </div>
 
       <div class="btn-group">
-        <button class="btn-primary" title="將目前選擇月份的出席報表匯出為 .xlsx 試算表" onclick="exportToExcel()">匯出 Excel</button>
-        <button class="btn-success" title="將目前選擇月份的出席統計產出標準 A3 橫式簽呈 PDF" onclick="exportToPDF()">匯出 PDF</button>
+        <button class="btn-primary" title="匯出 Excel 報表" onclick="exportToExcel()">匯出 Excel</button>
+        <button class="btn-success" title="產生高解析 A3 橫式 PDF 簽呈 (另存為 PDF)" onclick="exportToPDF()">匯出 PDF</button>
         <button class="btn-outline" title="僅備份人員名單、組別與排列順序 (不含出勤打勾紀錄)" onclick="backupRoster()">💾 備份名單</button>
         <button class="btn-outline" title="僅匯入人員名單與組別順序 (保留各月份既有出勤紀錄)" onclick="triggerImport()">📥 匯入名單</button>
         <button class="btn-outline" style="border-color:#3b82f6; color:#1d4ed8;" title="完整打包備份：包含名冊架構 + 全年度所有月份的打勾出勤紀錄" onclick="backupFullData()">💾 備份總檔</button>
@@ -536,47 +621,47 @@
     </div>
 
     <!-- Summary Dashboard -->
-    <div class="boss-summary-panel">
+    <div class="boss-summary-panel" id="summaryPanel">
       <div class="summary-card">
-        <div class="lbl">當月工作天數</div>
-        <div class="val" id="statWorkdays">0 天</div>
+        <div class="lbl" id="statLbl1">工作月應開天數</div>
+        <div class="val" id="statVal1">0 天</div>
       </div>
       <div class="summary-card">
         <div class="lbl">名冊總人數</div>
         <div class="val" id="statMembers">0 人</div>
       </div>
       <div class="summary-card">
-        <div class="lbl">在職應出席人數</div>
-        <div class="val" id="statActiveMembers" style="color:#2e7d32;">0 人</div>
+        <div class="lbl" id="statLbl3">在職應出席人數</div>
+        <div class="val" id="statVal3" style="color:#2e7d32;">0 人</div>
       </div>
       <div class="summary-card">
-        <div class="lbl">留停/產假人數</div>
-        <div class="val" id="statExemptMembers" style="color:#64748b;">0 人</div>
+        <div class="lbl" id="statLbl4">留停人數</div>
+        <div class="val" id="statVal4" style="color:#64748b;">0 人</div>
       </div>
       <div class="summary-card">
-        <div class="lbl">全體實到出席率</div>
-        <div class="val" id="statAvgRate" style="color:#1f3864;">0.0%</div>
+        <div class="lbl" id="statLbl5">全體實到出席率</div>
+        <div class="val" id="statVal5" style="color:#1f3864;">0.0%</div>
       </div>
       <div class="summary-card">
-        <div class="lbl">全勤同仁 (100%)</div>
-        <div class="val" id="statFullAtt" style="color:#c65911;">0 人</div>
+        <div class="lbl" id="statLbl6">全勤同仁 (100%)</div>
+        <div class="val" id="statVal6" style="color:#c65911;">0 人</div>
       </div>
     </div>
   </div>
 
-  <!-- Dedicated Print-only Header (Appears only when saving/printing to PDF) -->
+  <!-- Dedicated Print-only Header -->
   <div id="printHeader">
     <div style="text-align: center; margin-bottom: 10px;">
       <h2 id="printTitle" style="margin: 0 0 6px 0; font-size: 20px; color: #1f3864; font-weight: bold;">
         單位早會出席率統計表
       </h2>
       <div class="print-stats-bar">
-        <span>工作天數：<b id="printWorkdays">0 天</b></span>
+        <span><span id="pStatL1">應開天數</span>：<b id="printVal1">0 天</b></span>
         <span>名冊人數：<b id="printMembers">0 人</b></span>
-        <span>應出席人數：<b id="printActive" style="color:#2e7d32;">0 人</b></span>
-        <span>留停人數：<b id="printExempt" style="color:#64748b;">0 人</b></span>
-        <span>全體平均出席率：<b id="printAvg" style="color:#1f3864;">0.0%</b></span>
-        <span>全勤同仁：<b id="printFull" style="color:#c65911;">0 人</b></span>
+        <span><span id="pStatL3">應出席人數</span>：<b id="printVal3" style="color:#2e7d32;">0 人</b></span>
+        <span><span id="pStatL4">留停人數</span>：<b id="printVal4" style="color:#64748b;">0 人</b></span>
+        <span>全體出席率：<b id="printVal5" style="color:#1f3864;">0.0%</b></span>
+        <span>全勤同仁：<b id="printVal6" style="color:#c65911;">0 人</b></span>
       </div>
     </div>
   </div>
@@ -659,29 +744,92 @@
 
     let currentRocYear = 115; // 2026
     let currentMonth = 8;
+    let currentViewMode = "month"; // "month" or "annual"
     let isManageMode = false;
     let pendingImportMembers = null;
+    let pendingImportFullData = null;
     let draggedRowIndex = null;
 
+    // --- Official 115年 (2026) Public Holidays & Compensation Days (Weekday only) ---
+    const KNOWN_HOLIDAYS_115 = [
+      "2026-01-01", // 元旦
+      "2026-02-16", // 農曆除夕
+      "2026-02-17", // 春節初一
+      "2026-02-18", // 春節初二
+      "2026-02-19", // 春節初三
+      "2026-02-20", // 小年夜補假
+      "2026-02-27", // 228和平紀念日補假 (2/28適逢週六提前補假)
+      "2026-04-03", // 兒童節補假 (4/4適逢週六提前補假)
+      "2026-04-06", // 民族掃墓節/清明節補假 (4/5適逢週日延後補假)
+      "2026-05-01", // 勞動節
+      "2026-06-19", // 端午節
+      "2026-09-25", // 中秋節
+      "2026-09-28", // 孔子誕辰紀念日 / 教師節
+      "2026-10-09", // 國慶日補假 (10/10適逢週六提前補假)
+      "2026-10-26", // 臺灣光復節補假 (10/25適逢週日延後補假)
+      "2026-12-25"  // 行憲紀念日
+    ];
+
+    // --- Work Month Date Generation (Previous month 26th to Current month 25th) ---
+    // National holidays are directly excluded completely (do not generate columns for clean view)
     function getWorkdays(rocYear, month) {
       const gregorianYear = rocYear + 1911;
-      const daysInMonth = new Date(gregorianYear, month, 0).getDate();
+      let startYear = gregorianYear;
+      let startMonth = month - 2; // 0-indexed in JS (month - 1 is current month, so month - 2 is prev month)
+      if (startMonth < 0) {
+        startMonth = 11;
+        startYear = gregorianYear - 1;
+      }
+      
+      const startDate = new Date(startYear, startMonth, 26);
+      const endDate = new Date(gregorianYear, month - 1, 25);
+      
       const workdays = [];
+      let cur = new Date(startDate);
 
-      for (let d = 1; d <= daysInMonth; d++) {
-        const dt = new Date(gregorianYear, month - 1, d);
-        const dayOfWeek = dt.getDay();
+      while (cur <= endDate) {
+        const dayOfWeek = cur.getDay();
         if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+          const m = cur.getMonth() + 1;
+          const d = cur.getDate();
+          const y = cur.getFullYear();
+          const dKey = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          
+          // Completely exclude known official holidays from generating columns
+          if (rocYear === 115 && KNOWN_HOLIDAYS_115.includes(dKey)) {
+            cur.setDate(cur.getDate() + 1);
+            continue;
+          }
+
           workdays.push({
-            date: `${month}/${d}`,
-            display: `${month}/${d}(${WEEKDAY_NAMES[dayOfWeek]})`,
-            key: `${gregorianYear}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+            date: `${m}/${d}`,
+            display: `${m}/${d}(${WEEKDAY_NAMES[dayOfWeek]})`,
+            key: dKey
           });
         }
+        cur.setDate(cur.getDate() + 1);
       }
       return workdays;
     }
 
+    // --- LocalStorage Custom Holidays Management (單位自訂額外臨時停開) ---
+    function getHolidayKey(y, m) {
+      return `att_holidays_${y}_${m}`;
+    }
+    function loadHolidays(y, m) {
+      try {
+        const raw = localStorage.getItem(getHolidayKey(y, m));
+        return raw ? JSON.parse(raw) : [];
+      } catch(e) {
+        return [];
+      }
+    }
+    function saveHolidays(y, m, list) {
+      localStorage.setItem(getHolidayKey(y, m), JSON.stringify(list));
+    }
+    let currentHolidays = [];
+
+    // --- LocalStorage Members ---
     function getStoredMembers() {
       try {
         const stored = localStorage.getItem("att_members_list");
@@ -695,6 +843,7 @@
     }
     let MEMBERS = getStoredMembers();
 
+    // --- LocalStorage Attendance Records ---
     function getStorageKey(y, m) {
       return `att_records_${y}_${m}`;
     }
@@ -731,6 +880,7 @@
       });
 
       currentRecords = loadMonthRecords(currentRocYear, currentMonth);
+      currentHolidays = loadHolidays(currentRocYear, currentMonth);
       renderTable();
 
       document.addEventListener("keydown", handleGlobalKey);
@@ -743,31 +893,74 @@
         const days = getWorkdays(currentRocYear, i);
         const opt = document.createElement("option");
         opt.value = i;
-        opt.innerText = `${i} 月 (${days.length} 天)`;
+        opt.innerText = `${i} 月工作月 (${days.length} 工作日)`;
         if (i === currentMonth) opt.selected = true;
         mSel.appendChild(opt);
       }
+    }
+
+    function switchViewMode() {
+      currentViewMode = document.getElementById("viewModeSelect").value;
+      const mCont = document.getElementById("monthSelectContainer");
+      const mgCont = document.getElementById("manageBtnContainer");
+      const legBar = document.getElementById("statusLegendBar");
+
+      if (currentViewMode === "annual") {
+        mCont.style.display = "none";
+        mgCont.style.display = "none";
+        legBar.style.display = "none";
+        if (isManageMode) toggleManageMode();
+      } else {
+        mCont.style.display = "flex";
+        mgCont.style.display = "flex";
+        legBar.style.display = "flex";
+      }
+      renderTable();
     }
 
     function switchYear() {
       currentRocYear = parseInt(document.getElementById("yearSelect").value);
       updateMonthOptions();
       currentRecords = loadMonthRecords(currentRocYear, currentMonth);
+      currentHolidays = loadHolidays(currentRocYear, currentMonth);
       renderTable();
     }
 
     function switchMonth() {
       currentMonth = parseInt(document.getElementById("monthSelect").value);
       currentRecords = loadMonthRecords(currentRocYear, currentMonth);
+      currentHolidays = loadHolidays(currentRocYear, currentMonth);
       renderTable();
     }
 
+    // Toggle Holiday / 停開 (免開早會)
+    function toggleHoliday(dateKey) {
+      if (isManageMode) return;
+      const idx = currentHolidays.indexOf(dateKey);
+      if (idx >= 0) {
+        currentHolidays.splice(idx, 1);
+      } else {
+        currentHolidays.push(dateKey);
+      }
+      saveHolidays(currentRocYear, currentMonth, currentHolidays);
+      renderTable();
+    }
+
+    // --- Master Render Routing ---
     function renderTable() {
+      if (currentViewMode === "annual") {
+        renderAnnualTable();
+      } else {
+        renderMonthTable();
+      }
+    }
+
+    // --- 1. Monthly Detail Table Render ---
+    function renderMonthTable() {
       const days = getWorkdays(currentRocYear, currentMonth);
       const selectedGroup = document.getElementById("groupSelect").value;
       const searchKeyword = document.getElementById("searchInput").value.trim();
 
-      // We preserve original index in MEMBERS so reordering functions modify the exact item
       const filtered = [];
       MEMBERS.forEach((m, origIdx) => {
         const matchGroup = (selectedGroup === "全部" || m.group === selectedGroup);
@@ -777,6 +970,13 @@
         }
       });
 
+      // Update Summary Bar Labels
+      document.getElementById("statLbl1").innerText = "工作月應開天數";
+      document.getElementById("statLbl3").innerText = "在職應出席人數";
+      document.getElementById("statLbl4").innerText = "留停人數";
+      document.getElementById("statLbl5").innerText = "全體實到出席率";
+      document.getElementById("statLbl6").innerText = "全勤同仁 (100%)";
+
       // Table Header
       const thead = document.getElementById("attHead");
       let headHtml = `<tr>
@@ -784,7 +984,13 @@
         <th class="fixed-col-name">姓名</th>`;
       
       days.forEach(d => {
-        headHtml += `<th>${d.display}</th>`;
+        const isHol = currentHolidays.includes(d.key);
+        headHtml += `<th class="${isHol ? 'holiday-header' : ''}" style="min-width:44px;">
+          <div>${d.display}</div>
+          <button class="th-toggle-btn" style="${isHol ? 'background:#ea580c;' : ''}" title="${isHol ? '點擊取消停開，恢復為正常工作日' : '點擊設為全單位停開/放假 (自動扣減分母)'}" onclick="toggleHoliday('${d.key}')">
+            ${isHol ? '🛑 停' : '停'}
+          </button>
+        </th>`;
       });
 
       headHtml += `<th class="fixed-m1">應出天數</th>
@@ -797,6 +1003,7 @@
       const tbody = document.getElementById("attBody");
       let bodyHtml = "";
       const totalWorkdays = days.length;
+      const effectiveWorkdays = Math.max(0, totalWorkdays - currentHolidays.length);
 
       let statTotalActive = 0;
       let statTotalExempt = 0;
@@ -813,23 +1020,28 @@
         let daysCells = "";
 
         days.forEach(d => {
-          const val = pRec[d.key] || "";
-          let cls = "";
-          if (val === "✓") { cls = "st-pres"; actualCount++; }
-          else if (val === "公") { cls = "st-offi"; actualCount++; }
-          else if (val === "假") { cls = "st-leav"; }
-          else if (val === "留") { cls = "st-exem"; exemptCount++; }
+          const isHol = currentHolidays.includes(d.key);
+          if (isHol) {
+            daysCells += `<td class="holiday-cell" title="全單位停開/國定假 (不計分母)">休</td>`;
+          } else {
+            const val = pRec[d.key] || "";
+            let cls = "";
+            if (val === "✓") { cls = "st-pres"; actualCount++; }
+            else if (val === "公") { cls = "st-offi"; actualCount++; }
+            else if (val === "假") { cls = "st-leav"; }
+            else if (val === "留") { cls = "st-exem"; exemptCount++; }
 
-          daysCells += `<td class="att-cell ${cls}" 
-                            tabindex="0"
-                            data-person="${pKey}" 
-                            data-date="${d.key}" 
-                            onclick="cycleCellState(this)">${val}</td>`;
+            daysCells += `<td class="att-cell ${cls}" 
+                              tabindex="0"
+                              data-person="${pKey}" 
+                              data-date="${d.key}" 
+                              onclick="cycleCellState(this)">${val}</td>`;
+          }
         });
 
-        const requiredDays = Math.max(0, totalWorkdays - exemptCount);
+        const requiredDays = Math.max(0, effectiveWorkdays - exemptCount);
         let rateStr = "0.0%";
-        let isExemptAll = (exemptCount === totalWorkdays && totalWorkdays > 0);
+        let isExemptAll = (exemptCount === effectiveWorkdays && effectiveWorkdays > 0);
 
         if (isExemptAll) {
           rateStr = "留停";
@@ -890,22 +1102,177 @@
 
       tbody.innerHTML = bodyHtml;
 
-      document.getElementById("statWorkdays").innerText = `${totalWorkdays} 天`;
+      document.getElementById("statVal1").innerText = `${effectiveWorkdays} 天`;
       document.getElementById("statMembers").innerText = `${filtered.length} 人`;
-      document.getElementById("statActiveMembers").innerText = `${statTotalActive} 人`;
-      document.getElementById("statExemptMembers").innerText = `${statTotalExempt} 人`;
+      document.getElementById("statVal3").innerText = `${statTotalActive} 人`;
+      document.getElementById("statVal4").innerText = `${statTotalExempt} 人`;
       
       const avgRate = (statSumRequired > 0) 
         ? ((statSumActual / statSumRequired) * 100).toFixed(1) + "%" 
         : "0.0%";
-      document.getElementById("statAvgRate").innerText = avgRate;
-      document.getElementById("statFullAtt").innerText = `${statFullAttCount} 人`;
+      document.getElementById("statVal5").innerText = avgRate;
+      document.getElementById("statVal6").innerText = `${statFullAttCount} 人`;
+    }
+
+    // --- 2. Annual 1~12 Month Matrix Render (老闆專用年度總表) ---
+    function renderAnnualTable() {
+      const selectedGroup = document.getElementById("groupSelect").value;
+      const searchKeyword = document.getElementById("searchInput").value.trim();
+
+      const filtered = [];
+      MEMBERS.forEach((m, origIdx) => {
+        const matchGroup = (selectedGroup === "全部" || m.group === selectedGroup);
+        const matchName = (!searchKeyword || m.name.includes(searchKeyword));
+        if (matchGroup && matchName) {
+          filtered.push({ ...m, origIdx });
+        }
+      });
+
+      // Update Summary Bar Labels for Annual View
+      document.getElementById("statLbl1").innerText = "已開立月份";
+      document.getElementById("statLbl3").innerText = "年度總人次應出";
+      document.getElementById("statLbl4").innerText = "年度總人次實到";
+      document.getElementById("statLbl5").innerText = "年度全體總出席率";
+      document.getElementById("statLbl6").innerText = "年度全勤同仁 (100%)";
+
+      // Pre-load all 12 months records & holidays for the year
+      const yearMonthsData = {};
+      let activeMonthsCount = 0;
+
+      for (let m = 1; m <= 12; m++) {
+        const mDays = getWorkdays(currentRocYear, m);
+        const mHol = loadHolidays(currentRocYear, m);
+        const mRec = loadMonthRecords(currentRocYear, m);
+        const hasRec = Object.keys(mRec).length > 0;
+        if (hasRec) activeMonthsCount++;
+
+        yearMonthsData[m] = {
+          days: mDays,
+          holidays: mHol,
+          records: mRec,
+          hasRecords: hasRec,
+          effectiveDays: Math.max(0, mDays.length - mHol.length)
+        };
+      }
+
+      // Table Header
+      const thead = document.getElementById("attHead");
+      let headHtml = `<tr>
+        <th class="fixed-col-group">組別</th>
+        <th class="fixed-col-name">姓名</th>`;
+      
+      for (let m = 1; m <= 12; m++) {
+        headHtml += `<th style="min-width:60px;">${m}月</th>`;
+      }
+
+      headHtml += `<th class="fixed-a1">年度應出天數</th>
+                   <th class="fixed-a2">年度實到天數</th>
+                   <th class="fixed-a3">🎯 年度總出席率</th>
+                   </tr>`;
+      thead.innerHTML = headHtml;
+
+      // Table Body
+      const tbody = document.getElementById("attBody");
+      let bodyHtml = "";
+
+      let annualSumRequired = 0;
+      let annualSumActual = 0;
+      let annualFullAttCount = 0;
+
+      filtered.forEach((m, idx) => {
+        const pKey = `${m.group}_${m.name}`;
+        let personYearRequired = 0;
+        let personYearActual = 0;
+        let monthCells = "";
+
+        for (let mon = 1; mon <= 12; mon++) {
+          const mInfo = yearMonthsData[mon];
+          if (!mInfo.hasRecords) {
+            monthCells += `<td class="annual-cell" style="color:#94a3b8;">—</td>`;
+            continue;
+          }
+
+          const pRec = mInfo.records[pKey] || {};
+          let actualCount = 0;
+          let exemptCount = 0;
+
+          mInfo.days.forEach(d => {
+            if (!mInfo.holidays.includes(d.key)) {
+              const val = pRec[d.key] || "";
+              if (val === "✓" || val === "公") actualCount++;
+              if (val === "留") exemptCount++;
+            }
+          });
+
+          const reqDays = Math.max(0, mInfo.effectiveDays - exemptCount);
+          if (exemptCount === mInfo.effectiveDays && mInfo.effectiveDays > 0) {
+            monthCells += `<td class="annual-cell" style="color:#64748b; background:#f1f5f9;">留停</td>`;
+          } else {
+            personYearRequired += reqDays;
+            personYearActual += actualCount;
+            if (reqDays > 0) {
+              const rateVal = actualCount / reqDays;
+              const rateStr = (rateVal * 100).toFixed(1) + "%";
+              if (rateVal < 0.7) {
+                monthCells += `<td class="annual-cell rate-low">${rateStr}</td>`;
+              } else if (rateStr === "100.0%") {
+                monthCells += `<td class="annual-cell" style="color:#15803d;">${rateStr}</td>`;
+              } else {
+                monthCells += `<td class="annual-cell" style="color:#0f172a;">${rateStr}</td>`;
+              }
+            } else {
+              monthCells += `<td class="annual-cell" style="color:#94a3b8;">—</td>`;
+            }
+          }
+        }
+
+        annualSumRequired += personYearRequired;
+        annualSumActual += personYearActual;
+
+        let yearRateStr = "0.0%";
+        let yearRateStyle = "color:#0f172a; font-weight:800;";
+        if (personYearRequired > 0) {
+          const yrVal = personYearActual / personYearRequired;
+          yearRateStr = (yrVal * 100).toFixed(1) + "%";
+          if (yrVal < 0.7) {
+            yearRateStyle = "background-color:#ffe2e2 !important; color:#b91c1c !important; font-weight:800;";
+          } else if (yearRateStr === "100.0%") {
+            yearRateStyle = "color:#15803d; font-weight:800;";
+            annualFullAttCount++;
+          }
+        } else {
+          yearRateStr = "—";
+          yearRateStyle = "color:#94a3b8;";
+        }
+
+        bodyHtml += `<tr>
+          <td class="fixed-col-group">${m.group}</td>
+          <td class="fixed-col-name"><b>${m.name}</b></td>
+          ${monthCells}
+          <td class="fixed-a1">${personYearRequired}</td>
+          <td class="fixed-a2">${personYearActual}</td>
+          <td class="fixed-a3" style="${yearRateStyle}">${yearRateStr}</td>
+        </tr>`;
+      });
+
+      tbody.innerHTML = bodyHtml;
+
+      document.getElementById("statVal1").innerText = `${activeMonthsCount} 個月份`;
+      document.getElementById("statMembers").innerText = `${filtered.length} 人`;
+      document.getElementById("statVal3").innerText = `${annualSumRequired} 天`;
+      document.getElementById("statVal4").innerText = `${annualSumActual} 天`;
+      
+      const yearAvg = (annualSumRequired > 0) 
+        ? ((annualSumActual / annualSumRequired) * 100).toFixed(1) + "%" 
+        : "0.0%";
+      document.getElementById("statVal5").innerText = yearAvg;
+      document.getElementById("statVal6").innerText = `${annualFullAttCount} 人`;
     }
 
     const STATE_CYCLE = ["", "✓", "公", "假", "留"];
 
     function cycleCellState(td) {
-      if (isManageMode) return;
+      if (isManageMode || currentViewMode === "annual") return;
       const pKey = td.getAttribute("data-person");
       const dKey = td.getAttribute("data-date");
       if (!currentRecords[pKey]) currentRecords[pKey] = {};
@@ -938,6 +1305,7 @@
     }
 
     function handleGlobalKey(e) {
+      if (currentViewMode === "annual") return;
       const activeEl = document.activeElement;
       if (!activeEl || !activeEl.classList.contains("att-cell")) return;
 
@@ -945,7 +1313,7 @@
       const tr = activeEl.parentElement;
       const cellIndex = activeEl.cellIndex;
 
-      // 1. Arrow Keys Navigation
+      // Arrow Keys Navigation
       if (key === "ArrowLeft") {
         e.preventDefault();
         const prev = activeEl.previousElementSibling;
@@ -972,7 +1340,7 @@
         return;
       }
 
-      // 2. Attendance Status Input (1, 2, 3, 4, Del)
+      // Input Keys
       const pKey = activeEl.getAttribute("data-person");
       const dKey = activeEl.getAttribute("data-date");
 
@@ -997,12 +1365,14 @@
     function updateRowStats(tr) {
       const days = getWorkdays(currentRocYear, currentMonth);
       const totalWorkdays = days.length;
+      const effectiveWorkdays = Math.max(0, totalWorkdays - currentHolidays.length);
+
       const pres = tr.querySelectorAll("td.st-pres").length;
       const offi = tr.querySelectorAll("td.st-offi").length;
       const exem = tr.querySelectorAll("td.st-exem").length;
 
       const actual = pres + offi;
-      const required = Math.max(0, totalWorkdays - exem);
+      const required = Math.max(0, effectiveWorkdays - exem);
 
       const reqTd = tr.querySelector("td.fixed-m1");
       const actTd = tr.querySelector("td.fixed-m2");
@@ -1011,7 +1381,7 @@
       if (reqTd) reqTd.innerText = required;
       if (actTd) actTd.innerText = actual;
       if (rateTd) {
-        if (exem === totalWorkdays && totalWorkdays > 0) {
+        if (exem === effectiveWorkdays && effectiveWorkdays > 0) {
           rateTd.innerText = "留停";
           rateTd.classList.remove("rate-low");
           rateTd.style.color = "#64748b";
@@ -1033,8 +1403,13 @@
     }
 
     function updateSummaryPanel() {
+      if (currentViewMode === "annual") {
+        renderAnnualTable();
+        return;
+      }
       const days = getWorkdays(currentRocYear, currentMonth);
       const totalWorkdays = days.length;
+      const effectiveWorkdays = Math.max(0, totalWorkdays - currentHolidays.length);
       const allRows = document.querySelectorAll("#attBody tr");
       
       let statTotalActive = 0;
@@ -1058,26 +1433,30 @@
         }
       });
 
-      document.getElementById("statActiveMembers").innerText = `${statTotalActive} 人`;
-      document.getElementById("statExemptMembers").innerText = `${statTotalExempt} 人`;
+      document.getElementById("statVal1").innerText = `${effectiveWorkdays} 天`;
+      document.getElementById("statMembers").innerText = `${allRows.length} 人`;
+      document.getElementById("statVal3").innerText = `${statTotalActive} 人`;
+      document.getElementById("statVal4").innerText = `${statTotalExempt} 人`;
       const avg = statSumRequired > 0 ? ((statSumActual / statSumRequired) * 100).toFixed(1) + "%" : "0.0%";
-      document.getElementById("statAvgRate").innerText = avg;
-      document.getElementById("statFullAtt").innerText = `${statFullAttCount} 人`;
+      document.getElementById("statVal5").innerText = avg;
+      document.getElementById("statVal6").innerText = `${statFullAttCount} 人`;
     }
 
     function setMonthExempt(pKey) {
       const days = getWorkdays(currentRocYear, currentMonth);
-      if (confirm(`確定將該同仁設為【${currentRocYear}年 ${currentMonth}月份 全月留停】嗎？`)) {
+      if (confirm(`確定將該同仁設為【${currentRocYear}年 ${currentMonth}月工作月 全月留停】嗎？`)) {
         if (!currentRecords[pKey]) currentRecords[pKey] = {};
         days.forEach(d => {
-          currentRecords[pKey][d.key] = "留";
+          if (!currentHolidays.includes(d.key)) {
+            currentRecords[pKey][d.key] = "留";
+          }
         });
         saveMonthRecords(currentRocYear, currentMonth, currentRecords);
         renderTable();
       }
     }
 
-    // Inline Name Modification with Full Data Migration across Years/Months
+    // Inline Name Modification
     function handleNameChange(input) {
       const origIdx = parseInt(input.getAttribute("data-orig-idx"));
       const oldName = input.getAttribute("data-old-name").trim();
@@ -1092,7 +1471,6 @@
 
       if (newName === oldName) return;
 
-      // Check duplicate in same group
       const duplicate = MEMBERS.some((m, idx) => idx !== origIdx && m.group === group && m.name === newName);
       if (duplicate) {
         alert(`【${group}】已有同名同仁【${newName}】！`);
@@ -1100,11 +1478,9 @@
         return;
       }
 
-      // 1. Update in MEMBERS list
       MEMBERS[origIdx].name = newName;
       saveStoredMembers(MEMBERS);
 
-      // 2. Migrate Attendance Data in localStorage across all years and months
       const oldKey = `${group}_${oldName}`;
       const newKey = `${group}_${newName}`;
 
@@ -1127,7 +1503,6 @@
         console.error("Migration error:", e);
       }
 
-      // 3. Update current active memory records
       if (currentRecords[oldKey]) {
         currentRecords[newKey] = currentRecords[oldKey];
         delete currentRecords[oldKey];
@@ -1137,7 +1512,7 @@
       renderTable();
     }
 
-    // --- Order Adjustment (Button & Drag) ---
+    // Order Adjustment
     function moveMember(origIdx, direction) {
       const targetIdx = origIdx + direction;
       if (targetIdx < 0 || targetIdx >= MEMBERS.length) return;
@@ -1179,9 +1554,7 @@
 
     function handleDragLeave(e) {
       const tr = e.target.closest("tr");
-      if (tr) {
-        tr.classList.remove("drag-over-top", "drag-over-bottom");
-      }
+      if (tr) tr.classList.remove("drag-over-top", "drag-over-bottom");
     }
 
     function handleDrop(e) {
@@ -1210,7 +1583,7 @@
       renderTable();
     }
 
-    // Modal & Manage Actions
+    // Modal Actions
     function openAddModal() {
       document.getElementById("newMemberName").value = "";
       document.getElementById("addModal").style.display = "flex";
@@ -1255,10 +1628,7 @@
       }
     }
 
-    // Backup & Import (Roster Only vs Full Attendance Archive)
-    let pendingImportFullData = null;
-
-    // 1. Roster Only Backup
+    // Backup & Import
     function backupRoster() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(MEMBERS, null, 2));
       const dlAnchor = document.createElement('a');
@@ -1267,14 +1637,16 @@
       dlAnchor.click();
     }
 
-    // 2. Full Archive Backup (Members + All Years & Months Records)
     function backupFullData() {
       const allRecords = {};
+      const allHolidays = {};
       try {
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
           if (key && key.startsWith("att_records_")) {
             allRecords[key] = JSON.parse(localStorage.getItem(key));
+          } else if (key && key.startsWith("att_holidays_")) {
+            allHolidays[key] = JSON.parse(localStorage.getItem(key));
           }
         }
       } catch (e) {
@@ -1284,10 +1656,11 @@
       const fullPayload = {
         app: "unit_attendance_system",
         backupType: "full_archive",
-        version: "2.0",
+        version: "3.0",
         exportTime: new Date().toISOString(),
         members: MEMBERS,
-        records: allRecords
+        records: allRecords,
+        holidays: allHolidays
       };
 
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullPayload, null, 2));
@@ -1297,7 +1670,6 @@
       dlAnchor.click();
     }
 
-    // 3. Full Archive Import Handlers
     function triggerFullImport() {
       document.getElementById('importFullFileInput').click();
     }
@@ -1318,7 +1690,6 @@
           const membersList = parsed.members || parsed;
           const recordsMap = parsed.records || {};
 
-          // Count groups & recorded months
           const groupCount = {};
           membersList.forEach(m => {
             groupCount[m.group] = (groupCount[m.group] || 0) + 1;
@@ -1335,7 +1706,7 @@
           }
 
           document.getElementById("importFullSummary").innerHTML = summaryHtml;
-          pendingImportFullData = { members: membersList, records: recordsMap };
+          pendingImportFullData = { members: membersList, records: recordsMap, holidays: parsed.holidays || {} };
           document.getElementById("importFullModal").style.display = "flex";
         } catch(err) {
           alert("讀取檔案失敗：" + err.message);
@@ -1352,18 +1723,22 @@
 
     function confirmFullImport() {
       if (pendingImportFullData) {
-        // Restore members
         MEMBERS = pendingImportFullData.members;
         saveStoredMembers(MEMBERS);
 
-        // Restore attendance records
         if (pendingImportFullData.records) {
           for (let key in pendingImportFullData.records) {
             localStorage.setItem(key, JSON.stringify(pendingImportFullData.records[key]));
           }
         }
+        if (pendingImportFullData.holidays) {
+          for (let key in pendingImportFullData.holidays) {
+            localStorage.setItem(key, JSON.stringify(pendingImportFullData.holidays[key]));
+          }
+        }
 
         currentRecords = loadMonthRecords(currentRocYear, currentMonth);
+        currentHolidays = loadHolidays(currentRocYear, currentMonth);
         renderTable();
         closeImportFullModal();
         alert("出勤完整總檔還原套用成功！");
@@ -1387,7 +1762,6 @@
             return;
           }
 
-          // Count groups
           const groupCount = {};
           parsed.forEach(m => {
             groupCount[m.group] = (groupCount[m.group] || 0) + 1;
@@ -1424,11 +1798,21 @@
       }
     }
 
-    // Export to Excel with Professional Styling (xlsx-js-style)
+    // --- Export to Excel (Auto Switch: Month Detail vs Annual Matrix) ---
     function exportToExcel() {
       const wasManage = isManageMode;
       if (wasManage) toggleManageMode();
 
+      if (currentViewMode === "annual") {
+        exportAnnualExcel();
+      } else {
+        exportMonthExcel();
+      }
+
+      if (wasManage) toggleManageMode();
+    }
+
+    function exportMonthExcel() {
       const days = getWorkdays(currentRocYear, currentMonth);
       const selectedGroup = document.getElementById("groupSelect").value;
       const searchKeyword = document.getElementById("searchInput").value.trim();
@@ -1445,19 +1829,20 @@
       const wb = XLSX.utils.book_new();
       const wsData = [];
 
-      // 1. Title Row
-      const titleText = `${currentRocYear}年度 ${currentMonth}月份 單位早會出席率統計明細表`;
-      const titleRow = [titleText];
-      wsData.push(titleRow);
+      const titleText = `${currentRocYear}年度 ${currentMonth}月工作月 單位早會出席率統計明細表`;
+      wsData.push([titleText]);
 
-      // 2. Header Row
       const headerRow = ["組別", "姓名"];
-      days.forEach(d => headerRow.push(d.display));
+      days.forEach(d => {
+        const isHol = currentHolidays.includes(d.key);
+        headerRow.push(isHol ? `${d.display}[停開]` : d.display);
+      });
       headerRow.push("應出天數", "實到天數", "早會出席率");
       wsData.push(headerRow);
 
-      // 3. Data Rows
       const totalWorkdays = days.length;
+      const effectiveWorkdays = Math.max(0, totalWorkdays - currentHolidays.length);
+
       filtered.forEach(m => {
         const pKey = `${m.group}_${m.name}`;
         const pRec = currentRecords[pKey] || {};
@@ -1467,15 +1852,19 @@
         const rowData = [m.group, m.name];
 
         days.forEach(d => {
-          const val = pRec[d.key] || "";
-          if (val === "✓" || val === "公") actualCount++;
-          if (val === "留") exemptCount++;
-          rowData.push(val);
+          if (currentHolidays.includes(d.key)) {
+            rowData.push("休");
+          } else {
+            const val = pRec[d.key] || "";
+            if (val === "✓" || val === "公") actualCount++;
+            if (val === "留") exemptCount++;
+            rowData.push(val);
+          }
         });
 
-        const requiredDays = Math.max(0, totalWorkdays - exemptCount);
+        const requiredDays = Math.max(0, effectiveWorkdays - exemptCount);
         let rateStr = "0.0%";
-        if (exemptCount === totalWorkdays && totalWorkdays > 0) {
+        if (exemptCount === effectiveWorkdays && effectiveWorkdays > 0) {
           rateStr = "留停";
         } else if (requiredDays > 0) {
           rateStr = ((actualCount / requiredDays) * 100).toFixed(1) + "%";
@@ -1487,39 +1876,35 @@
 
       const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-      // --- Styling Definition ---
       const borderThin = {
         top: { style: "thin", color: { rgb: "D9D9D9" } },
         bottom: { style: "thin", color: { rgb: "D9D9D9" } },
         left: { style: "thin", color: { rgb: "D9D9D9" } },
         right: { style: "thin", color: { rgb: "D9D9D9" } }
       };
-
       const fontBase = { name: "微軟正黑體", sz: 10 };
       const alignCenter = { vertical: "center", horizontal: "center" };
-
-      // Title Styling (A1:merged)
       const totalCols = headerRow.length;
+
       ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }];
       ws["A1"].s = {
         font: { name: "微軟正黑體", sz: 14, bold: true, color: { rgb: "1F3864" } },
         alignment: { vertical: "center", horizontal: "left" }
       };
 
-      // Header Styling (Row 2, index 1)
       for (let c = 0; c < totalCols; c++) {
         const cellRef = XLSX.utils.encode_cell({ r: 1, c: c });
         if (ws[cellRef]) {
+          const isHolCol = (c >= 2 && c < totalCols - 3 && currentHolidays.includes(days[c - 2].key));
           ws[cellRef].s = {
             font: { name: "微軟正黑體", sz: 10, bold: true, color: { rgb: "FFFFFF" } },
-            fill: { fgColor: { rgb: "1F3864" } },
+            fill: { fgColor: { rgb: isHolCol ? "C2410C" : "1F3864" } },
             alignment: alignCenter,
             border: borderThin
           };
         }
       }
 
-      // Data Rows Styling (from Row 3, index 2)
       filtered.forEach((m, rIdx) => {
         const row = rIdx + 2;
         const isEven = (rIdx % 2 === 1);
@@ -1536,16 +1921,16 @@
           let fillStyle = { fgColor: { rgb: defaultBg } };
           let alignStyle = { ...alignCenter };
 
-          // Col 0: 組別, Col 1: 姓名
           if (c === 0) {
             fillStyle = { fgColor: { rgb: isEven ? "F1F5F9" : "FFFFFF" } };
           } else if (c === 1) {
             fontStyle.bold = true;
             fillStyle = { fgColor: { rgb: isEven ? "F1F5F9" : "FFFFFF" } };
-          }
-          // Date Cells (c >= 2 and c < totalCols - 3)
-          else if (c >= 2 && c < totalCols - 3) {
-            if (val === "✓") {
+          } else if (c >= 2 && c < totalCols - 3) {
+            if (val === "休") {
+              fillStyle = { fgColor: { rgb: "F1F5F9" } };
+              fontStyle = { ...fontBase, color: { rgb: "94A3B8" } };
+            } else if (val === "✓") {
               fillStyle = { fgColor: { rgb: "E2EFDA" } };
               fontStyle = { ...fontBase, bold: true, color: { rgb: "276A3C" } };
             } else if (val === "公") {
@@ -1558,26 +1943,16 @@
               fillStyle = { fgColor: { rgb: "E7E6E6" } };
               fontStyle = { ...fontBase, color: { rgb: "595959" } };
             }
-          }
-          // Metric 1: 應出天數
-          else if (c === totalCols - 3) {
+          } else if (c === totalCols - 3 || c === totalCols - 2) {
             fontStyle.bold = true;
             cell.t = "n";
-          }
-          // Metric 2: 實到天數
-          else if (c === totalCols - 2) {
-            fontStyle.bold = true;
-            cell.t = "n";
-          }
-          // Metric 3: 早會出席率
-          else if (c === totalCols - 1) {
+          } else if (c === totalCols - 1) {
             fontStyle.bold = true;
             if (val === "留停") {
               fontStyle.color = { rgb: "64748B" };
             } else {
               const numVal = parseFloat(val);
               if (!isNaN(numVal) && numVal < 70.0) {
-                // Low Attendance Alert: Soft Red Fill + Dark Red Font
                 fillStyle = { fgColor: { rgb: "FFE2E2" } };
                 fontStyle.color = { rgb: "B91C1C" };
               } else if (val === "100.0%") {
@@ -1588,55 +1963,236 @@
             }
           }
 
-          cell.s = {
-            font: fontStyle,
-            fill: fillStyle,
-            alignment: alignStyle,
-            border: borderThin
-          };
+          cell.s = { font: fontStyle, fill: fillStyle, alignment: alignStyle, border: borderThin };
         }
       });
 
-      // 4. Set Column Widths
-      const colWidths = [
-        { wch: 11 }, // 組別
-        { wch: 13 }  // 姓名
-      ];
-      days.forEach(() => colWidths.push({ wch: 9.5 })); // 工作日
-      colWidths.push({ wch: 12 }, { wch: 12 }, { wch: 14 }); // 應出, 實到, 出席率
+      const colWidths = [{ wch: 11 }, { wch: 13 }];
+      days.forEach(() => colWidths.push({ wch: 9.5 }));
+      colWidths.push({ wch: 12 }, { wch: 12 }, { wch: 14 });
       ws["!cols"] = colWidths;
-
-      // 5. Freeze Panes (Freeze Row 1 & 2, Col A & B)
       ws["!views"] = [{ state: "frozen", xSplit: 2, ySplit: 2 }];
 
-      XLSX.utils.book_append_sheet(wb, ws, `${currentRocYear}年${currentMonth}月早會出勤表`);
-      XLSX.writeFile(wb, `${currentRocYear}年_${currentMonth}月份早會出席率統計表.xlsx`);
-
-      if (wasManage) toggleManageMode();
+      XLSX.utils.book_append_sheet(wb, ws, `${currentRocYear}年${currentMonth}月出勤明細`);
+      XLSX.writeFile(wb, `${currentRocYear}年_${currentMonth}月工作月早會出席率統計表.xlsx`);
     }
 
-        // Export to PDF (Native High-Resolution Vector Print - Zero CORS/Iframe Restrictions)
+    function exportAnnualExcel() {
+      const selectedGroup = document.getElementById("groupSelect").value;
+      const searchKeyword = document.getElementById("searchInput").value.trim();
+
+      const filtered = [];
+      MEMBERS.forEach((m, origIdx) => {
+        const matchGroup = (selectedGroup === "全部" || m.group === selectedGroup);
+        const matchName = (!searchKeyword || m.name.includes(searchKeyword));
+        if (matchGroup && matchName) {
+          filtered.push({ ...m, origIdx });
+        }
+      });
+
+      const wb = XLSX.utils.book_new();
+      const wsData = [];
+
+      const titleText = `${currentRocYear}年度 全單位同仁 1~12月份 早會出席率年度總表`;
+      wsData.push([titleText]);
+
+      const headerRow = ["組別", "姓名"];
+      for (let m = 1; m <= 12; m++) headerRow.push(`${m}月`);
+      headerRow.push("年度應出天數", "年度實到天數", "🎯 年度總出席率");
+      wsData.push(headerRow);
+
+      const yearMonthsData = {};
+      for (let m = 1; m <= 12; m++) {
+        const mDays = getWorkdays(currentRocYear, m);
+        const mHol = loadHolidays(currentRocYear, m);
+        const mRec = loadMonthRecords(currentRocYear, m);
+        yearMonthsData[m] = {
+          days: mDays,
+          holidays: mHol,
+          records: mRec,
+          hasRecords: Object.keys(mRec).length > 0,
+          effectiveDays: Math.max(0, mDays.length - mHol.length)
+        };
+      }
+
+      filtered.forEach(m => {
+        const pKey = `${m.group}_${m.name}`;
+        const rowData = [m.group, m.name];
+        let personYearRequired = 0;
+        let personYearActual = 0;
+
+        for (let mon = 1; mon <= 12; mon++) {
+          const mInfo = yearMonthsData[mon];
+          if (!mInfo.hasRecords) {
+            rowData.push("—");
+            continue;
+          }
+
+          const pRec = mInfo.records[pKey] || {};
+          let actualCount = 0;
+          let exemptCount = 0;
+
+          mInfo.days.forEach(d => {
+            if (!mInfo.holidays.includes(d.key)) {
+              const val = pRec[d.key] || "";
+              if (val === "✓" || val === "公") actualCount++;
+              if (val === "留") exemptCount++;
+            }
+          });
+
+          const reqDays = Math.max(0, mInfo.effectiveDays - exemptCount);
+          if (exemptCount === mInfo.effectiveDays && mInfo.effectiveDays > 0) {
+            rowData.push("留停");
+          } else {
+            personYearRequired += reqDays;
+            personYearActual += actualCount;
+            rowData.push(reqDays > 0 ? ((actualCount / reqDays) * 100).toFixed(1) + "%" : "—");
+          }
+        }
+
+        let yearRateStr = "—";
+        if (personYearRequired > 0) {
+          yearRateStr = ((personYearActual / personYearRequired) * 100).toFixed(1) + "%";
+        }
+        rowData.push(personYearRequired, personYearActual, yearRateStr);
+        wsData.push(rowData);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+      const borderThin = {
+        top: { style: "thin", color: { rgb: "D9D9D9" } },
+        bottom: { style: "thin", color: { rgb: "D9D9D9" } },
+        left: { style: "thin", color: { rgb: "D9D9D9" } },
+        right: { style: "thin", color: { rgb: "D9D9D9" } }
+      };
+      const fontBase = { name: "微軟正黑體", sz: 10 };
+      const alignCenter = { vertical: "center", horizontal: "center" };
+      const totalCols = headerRow.length;
+
+      ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }];
+      ws["A1"].s = {
+        font: { name: "微軟正黑體", sz: 14, bold: true, color: { rgb: "1F3864" } },
+        alignment: { vertical: "center", horizontal: "left" }
+      };
+
+      for (let c = 0; c < totalCols; c++) {
+        const cellRef = XLSX.utils.encode_cell({ r: 1, c: c });
+        if (ws[cellRef]) {
+          ws[cellRef].s = {
+            font: { name: "微軟正黑體", sz: 10, bold: true, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "1F3864" } },
+            alignment: alignCenter,
+            border: borderThin
+          };
+        }
+      }
+
+      filtered.forEach((m, rIdx) => {
+        const row = rIdx + 2;
+        const isEven = (rIdx % 2 === 1);
+        const defaultBg = isEven ? "F8FAFC" : "FFFFFF";
+
+        for (let c = 0; c < totalCols; c++) {
+          const cellRef = XLSX.utils.encode_cell({ r: row, c: c });
+          if (!ws[cellRef]) ws[cellRef] = { t: "s", v: "" };
+
+          const cell = ws[cellRef];
+          const val = cell.v !== undefined ? String(cell.v) : "";
+
+          let fontStyle = { ...fontBase };
+          let fillStyle = { fgColor: { rgb: defaultBg } };
+          let alignStyle = { ...alignCenter };
+
+          if (c === 0) {
+            fillStyle = { fgColor: { rgb: isEven ? "F1F5F9" : "FFFFFF" } };
+          } else if (c === 1) {
+            fontStyle.bold = true;
+            fillStyle = { fgColor: { rgb: isEven ? "F1F5F9" : "FFFFFF" } };
+          } else if (c >= 2 && c <= 13) {
+            // Month 1~12 cells
+            if (val === "留停") {
+              fontStyle.color = { rgb: "64748B" };
+              fillStyle = { fgColor: { rgb: "F1F5F9" } };
+            } else if (val === "—") {
+              fontStyle.color = { rgb: "94A3B8" };
+            } else {
+              const numVal = parseFloat(val);
+              if (!isNaN(numVal) && numVal < 70.0) {
+                fillStyle = { fgColor: { rgb: "FFE2E2" } };
+                fontStyle.color = { rgb: "B91C1C" };
+                fontStyle.bold = true;
+              } else if (val === "100.0%") {
+                fontStyle.color = { rgb: "15803D" };
+                fontStyle.bold = true;
+              } else {
+                fontStyle.color = { rgb: "0F172A" };
+                fontStyle.bold = true;
+              }
+            }
+          } else if (c === totalCols - 3 || c === totalCols - 2) {
+            fontStyle.bold = true;
+            cell.t = "n";
+          } else if (c === totalCols - 1) {
+            fontStyle.bold = true;
+            const numVal = parseFloat(val);
+            if (!isNaN(numVal) && numVal < 70.0) {
+              fillStyle = { fgColor: { rgb: "FFE2E2" } };
+              fontStyle.color = { rgb: "B91C1C" };
+            } else if (val === "100.0%") {
+              fontStyle.color = { rgb: "15803D" };
+            } else if (val !== "—") {
+              fontStyle.color = { rgb: "0F172A" };
+            } else {
+              fontStyle.color = { rgb: "94A3B8" };
+            }
+          }
+
+          cell.s = { font: fontStyle, fill: fillStyle, alignment: alignStyle, border: borderThin };
+        }
+      });
+
+      const colWidths = [{ wch: 11 }, { wch: 13 }];
+      for (let m = 1; m <= 12; m++) colWidths.push({ wch: 8.5 });
+      colWidths.push({ wch: 14 }, { wch: 14 }, { wch: 16 });
+      ws["!cols"] = colWidths;
+      ws["!views"] = [{ state: "frozen", xSplit: 2, ySplit: 2 }];
+
+      XLSX.utils.book_append_sheet(wb, ws, `${currentRocYear}年出席率年度總表`);
+      XLSX.writeFile(wb, `${currentRocYear}年度_全單位1~12月早會出席率年度總表.xlsx`);
+    }
+
+    // --- Export to PDF (Native Vector Print) ---
     function exportToPDF() {
       const wasManage = isManageMode;
       if (wasManage) toggleManageMode();
 
-      // Update dedicated print header data
-      document.getElementById("printTitle").innerText = `${currentRocYear}年度 ${currentMonth}月份 單位早會出席率統計表`;
-      document.getElementById("printWorkdays").innerText = document.getElementById("statWorkdays").innerText;
-      document.getElementById("printMembers").innerText = document.getElementById("statMembers").innerText;
-      document.getElementById("printActive").innerText = document.getElementById("statActiveMembers").innerText;
-      document.getElementById("printExempt").innerText = document.getElementById("statExemptMembers").innerText;
-      document.getElementById("printAvg").innerText = document.getElementById("statAvgRate").innerText;
-      document.getElementById("printFull").innerText = document.getElementById("statFullAtt").innerText;
+      if (currentViewMode === "annual") {
+        document.getElementById("printTitle").innerText = `${currentRocYear}年度 全單位 1~12月份 早會出席率年度總表`;
+        document.getElementById("pStatL1").innerText = "開立月份";
+        document.getElementById("pStatL3").innerText = "年度總人次應出";
+        document.getElementById("pStatL4").innerText = "年度總人次實到";
+      } else {
+        document.getElementById("printTitle").innerText = `${currentRocYear}年度 ${currentMonth}月工作月 單位早會出席率統計表`;
+        document.getElementById("pStatL1").innerText = "應開天數";
+        document.getElementById("pStatL3").innerText = "在職應出席人數";
+        document.getElementById("pStatL4").innerText = "留停人數";
+      }
 
-      // Trigger browser's native vector print dialog (Save as PDF)
+      document.getElementById("printVal1").innerText = document.getElementById("statVal1").innerText;
+      document.getElementById("printMembers").innerText = document.getElementById("statMembers").innerText;
+      document.getElementById("printVal3").innerText = document.getElementById("statVal3").innerText;
+      document.getElementById("printVal4").innerText = document.getElementById("statVal4").innerText;
+      document.getElementById("printVal5").innerText = document.getElementById("statVal5").innerText;
+      document.getElementById("printVal6").innerText = document.getElementById("statVal6").innerText;
+
       setTimeout(() => {
         window.print();
         if (wasManage) toggleManageMode();
       }, 100);
     }
 
-        window.onload = init;
+    window.onload = init;
   </script>
 </body>
 </html>
